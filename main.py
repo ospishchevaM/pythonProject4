@@ -89,6 +89,7 @@ while True:  # осоновной цикл программы
     _, img = cap.read()  # считывае изображения с камеры
     result = hands.process(img)  # обнаружение точек на руке
     if result.multi_hand_landmarks:  # проверка, рука и точки на экране
+
         for id, lm in enumerate(result.multi_hand_landmarks[0].landmark):  # перебор всех точек на руке
             h, w, _ = img.shape  # получение размеров изображения
             cx, cy = int(lm.x * w), int(lm.y * h)  # координаты рассматриваемой точки
@@ -97,8 +98,14 @@ while True:  # осоновной цикл программы
 
             if finger2(result) and id == 8:  # проверка на то, выпрямлен ли второй палец и есть ли 8 точка (подушечка второго пальца)
                 cv2.circle(img, (cx, cy), 15, (255, 0, 255), cv2.FILLED)
-                if cx > 15 and cx < width - 180 and cy > 0 and cy < height:  # проверка координат пальца на то, находится ли она в рамках экрана
-                    autopy.mouse.move((width - (cx * width) / w), (cy * height) / (h))  # передвижение мышки на указанные координаты
+                x_screen = (width - (cx * width) / w)
+                y_screen = (cy * height) / h
+                # ограничиваем координаты, чтобы не выйти за экран
+                margin = 5
+
+                x_screen = max(margin, min(width - margin, x_screen))
+                y_screen = max(margin, min(height - margin, y_screen))
+                autopy.mouse.move(x_screen, y_screen)
 
 
 
