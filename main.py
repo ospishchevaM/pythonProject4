@@ -8,6 +8,8 @@ import time
 last_click = 0
 SENSITIVITY = 2.2
 
+
+
 # проверка пальцев
 def cl(result):  # проверка, сведены ли пальцы
     x8 = result.multi_hand_landmarks[0].landmark[8].x
@@ -81,6 +83,9 @@ def finger4(results):  # проверка выпрямлен ли четверт
 cap = cv2.VideoCapture(0)  # получение изображения с камеры
 width, height = autopy.screen.size()  # получение размеров экрана
 pyautogui.PAUSE = 0
+prev_x = width / 2
+prev_y = height / 2
+SMOOTHING = 0.7
 
 # обнаружние руки
 hands = mp.solutions.hands.Hands(static_image_mode=False,
@@ -96,7 +101,7 @@ while True:  # осоновной цикл программы
     imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     result = hands.process(imgRGB)  # обнаружение точек на руке
 
-    if result.multi_hand_landmarks:  # проверка, рука и точки на экране
+    if result and result.multi_hand_landmarks:  # проверка, рука и точки на экране
         f2 = finger2(result)
         f3 = finger3(result)
         f4 = finger4(result)
@@ -124,6 +129,15 @@ while True:  # осоновной цикл программы
 
                 x_screen = max(margin, min(width - margin, x_screen))
                 y_screen = max(margin, min(height - margin, y_screen))
+                # сглаживание движения мыши
+                x_screen = prev_x + (x_screen - prev_x) * SMOOTHING
+                y_screen = prev_y + (y_screen - prev_y) * SMOOTHING
+
+                # сохраняем позицию для следующего кадра
+                prev_x = x_screen
+                prev_y = y_screen
+
+                # движение курсора
                 autopy.mouse.move(x_screen, y_screen)
 
                 current_time = time.time()
