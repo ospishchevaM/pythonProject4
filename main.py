@@ -4,6 +4,9 @@ import mediapipe as mp
 import math
 import numpy as np
 import pyautogui
+import time
+last_click = 0
+SENSITIVITY = 2.2
 
 # проверка пальцев
 def cl(result):  # проверка, сведены ли пальцы
@@ -12,7 +15,7 @@ def cl(result):  # проверка, сведены ли пальцы
     x12 = result.multi_hand_landmarks[0].landmark[12].x
     y12 = result.multi_hand_landmarks[0].landmark[12].y
     s128 = math.hypot(x8 - x12, y8 - y12)
-    if s128 < 0.05:
+    if s128 < 0.04:
         return True
 
 def scroll_down_check(result):  # проверка, что все пальцы согнуты, кроме большого
@@ -77,6 +80,7 @@ def finger4(results):  # проверка выпрямлен ли четверт
 
 cap = cv2.VideoCapture(0)  # получение изображения с камеры
 width, height = autopy.screen.size()  # получение размеров экрана
+pyautogui.PAUSE = 0
 
 # обнаружние руки
 hands = mp.solutions.hands.Hands(static_image_mode=False,
@@ -106,8 +110,15 @@ while True:  # осоновной цикл программы
 
             if f2 and id == 8:  # проверка на то, выпрямлен ли второй палец и есть ли 8 точка (подушечка второго пальца)
                 cv2.circle(img, (cx, cy), 15, (255, 0, 255), cv2.FILLED)
-                x_screen = (width - (cx * width) / w)
-                y_screen = (cy * height) / h
+                center_x = w / 2
+                center_y = h / 2
+
+                dx = cx - center_x
+                dy = cy - center_y
+
+                x_screen = width / 2 - dx * SENSITIVITY
+                y_screen = height / 2 + dy * SENSITIVITY
+
                 # ограничиваем координаты, чтобы не выйти за экран
                 margin = 5
 
@@ -115,14 +126,14 @@ while True:  # осоновной цикл программы
                 y_screen = max(margin, min(height - margin, y_screen))
                 autopy.mouse.move(x_screen, y_screen)
 
-
-
-
+                current_time = time.time()
                 if f2 and f3 and f4:  # прокрутка вверх — все пальцы выпрямлены
                     pyautogui.scroll(3)
 
-                elif click_check and f2:  # обнаружение жеста для клика
-                    autopy.mouse.click()  # клик
+
+                elif click_check and f2 and current_time - last_click > 0.4:
+                        autopy.mouse.click()
+                        last_click = current_time
 
 
             elif sd:  # прокрутка вниз — кулак
@@ -132,4 +143,4 @@ while True:  # осоновной цикл программы
 
     img = np.fliplr(img)  # отзеркаливание изображения, чтобы курсор двигался в нужную сторону
     cv2.imshow('Handtrack', img)  # показ изображения
-    cv2.waitKey(1)  # команда, которая позволяет окну с изображением не закрываться
+    cv2.waitKey(5)  # команда, которая позволяет окну с изображением не закрываться
