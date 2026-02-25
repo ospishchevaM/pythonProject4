@@ -107,50 +107,53 @@ while True:  # осоновной цикл программы
         f4 = finger4(result)
         sd = scroll_down_check(result)
         click_check = cl(result)
-        for id, lm in enumerate(result.multi_hand_landmarks[0].landmark):  # перебор всех точек на руке
-            h, w, _ = img.shape  # получение размеров изображения
-            cx, cy = int(lm.x * w), int(lm.y * h)  # координаты рассматриваемой точки
+        hand = result.multi_hand_landmarks[0]
+        lm = hand.landmark[8]
 
-            cv2.circle(img, (cx, cy), 3, (355, 0, 255))  # рисование кружка на точке
+        h, w, _ = img.shape  # получение размеров изображения
+        cx = int(lm.x * w)
+        cy = int(lm.y * h)
 
-            if f2 and id == 8:  # проверка на то, выпрямлен ли второй палец и есть ли 8 точка (подушечка второго пальца)
-                cv2.circle(img, (cx, cy), 15, (255, 0, 255), cv2.FILLED)
-                center_x = w / 2
-                center_y = h / 2
+        cv2.circle(img, (cx, cy), 3, (355, 0, 255))  # рисование кружка на точке
 
-                dx = cx - center_x
-                dy = cy - center_y
+        if f2:  # проверка на то, выпрямлен ли второй палец и есть ли 8 точка (подушечка второго пальца)
+            cv2.circle(img, (cx, cy), 15, (255, 0, 255), cv2.FILLED)
+            center_x = w / 2
+            center_y = h / 2
 
-                x_screen = width / 2 - dx * SENSITIVITY
-                y_screen = height / 2 + dy * SENSITIVITY
+            dx = cx - center_x
+            dy = cy - center_y
 
-                # ограничиваем координаты, чтобы не выйти за экран
-                margin = 5
+            x_screen = width / 2 - dx * SENSITIVITY
+            y_screen = height / 2 + dy * SENSITIVITY
 
-                x_screen = max(margin, min(width - margin, x_screen))
-                y_screen = max(margin, min(height - margin, y_screen))
-                # сглаживание движения мыши
-                x_screen = prev_x + (x_screen - prev_x) * SMOOTHING
-                y_screen = prev_y + (y_screen - prev_y) * SMOOTHING
+            # ограничиваем координаты, чтобы не выйти за экран
+            margin = 5
 
-                # сохраняем позицию для следующего кадра
-                prev_x = x_screen
-                prev_y = y_screen
+            x_screen = max(margin, min(width - margin, x_screen))
+            y_screen = max(margin, min(height - margin, y_screen))
+            # сглаживание движения мыши
+            x_screen = prev_x + (x_screen - prev_x) * SMOOTHING
+            y_screen = prev_y + (y_screen - prev_y) * SMOOTHING
 
-                # движение курсора
-                autopy.mouse.move(x_screen, y_screen)
+            # сохраняем позицию для следующего кадра
+            prev_x = x_screen
+            prev_y = y_screen
 
-                current_time = time.time()
-                if f2 and f3 and f4:  # прокрутка вверх — все пальцы выпрямлены
-                    pyautogui.scroll(3)
+            # движение курсора
+            autopy.mouse.move(x_screen, y_screen)
 
-
-                elif click_check and f2 and current_time - last_click > 0.4:
-                        autopy.mouse.click()
-                        last_click = current_time
+            current_time = time.time()
+            if f2 and f3 and f4:  # прокрутка вверх — все пальцы выпрямлены
+                pyautogui.scroll(3)
 
 
-            elif sd:  # прокрутка вниз — кулак
+            elif click_check and f2 and current_time - last_click > 0.4:
+                    autopy.mouse.click()
+                    last_click = current_time
+
+
+        elif sd:  # прокрутка вниз — кулак
                     pyautogui.scroll(-3)
 
         mpDraw.draw_landmarks(img, result.multi_hand_landmarks[0], mp.solutions.hands.HAND_CONNECTIONS)  # рисование линий между точками на руке
