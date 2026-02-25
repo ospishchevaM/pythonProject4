@@ -5,8 +5,6 @@ import math
 import numpy as np
 import pyautogui
 import time
-last_click = 0
-SENSITIVITY = 2.2
 
 
 
@@ -83,9 +81,14 @@ def finger4(results):  # проверка выпрямлен ли четверт
 cap = cv2.VideoCapture(0)  # получение изображения с камеры
 width, height = autopy.screen.size()  # получение размеров экрана
 pyautogui.PAUSE = 0
+
+# начальная позиция курсора
 prev_x = width / 2
 prev_y = height / 2
+
 SMOOTHING = 0.7
+SENSITIVITY = 2.2
+
 
 # обнаружние руки
 hands = mp.solutions.hands.Hands(static_image_mode=False,
@@ -94,9 +97,11 @@ hands = mp.solutions.hands.Hands(static_image_mode=False,
                                  min_detection_confidence=0.3)
 
 mpDraw = mp.solutions.drawing_utils  # создание объекта для дальнейшего рисования линий на руке
-while True:  # осоновной цикл программы
 
-    _, img = cap.read()  # считывае изображения с камеры
+last_click = 0  # время последнего клика
+
+while True:
+    _, img = cap.read()  # считывание изображения с камеры
 
     imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     result = hands.process(imgRGB)  # обнаружение точек на руке
@@ -118,42 +123,45 @@ while True:  # осоновной цикл программы
 
         if f2:  # проверка на то, выпрямлен ли второй палец и есть ли 8 точка (подушечка второго пальца)
             cv2.circle(img, (cx, cy), 15, (255, 0, 255), cv2.FILLED)
+
+            # рассчет центра экрана
             center_x = w / 2
             center_y = h / 2
 
+            # насколько палец смещен от центра
             dx = cx - center_x
             dy = cy - center_y
 
             x_screen = width / 2 - dx * SENSITIVITY
             y_screen = height / 2 + dy * SENSITIVITY
 
-            # ограничиваем координаты, чтобы не выйти за экран
+            # ограничения на координаты, чтобы не выйти за экран
             margin = 5
-
             x_screen = max(margin, min(width - margin, x_screen))
             y_screen = max(margin, min(height - margin, y_screen))
-            # сглаживание движения мыши
+
+            # сглаживание движения
             x_screen = prev_x + (x_screen - prev_x) * SMOOTHING
             y_screen = prev_y + (y_screen - prev_y) * SMOOTHING
 
-            # сохраняем позицию для следующего кадра
             prev_x = x_screen
             prev_y = y_screen
 
             # движение курсора
             autopy.mouse.move(x_screen, y_screen)
 
-            current_time = time.time()
+            current_time = time.time()  # для клика
+
             if f2 and f3 and f4:  # прокрутка вверх — все пальцы выпрямлены
                 pyautogui.scroll(3)
 
 
-            elif click_check and f2 and current_time - last_click > 0.4:
+            elif click_check and f2 and current_time - last_click > 0.4:  # защита от двойного срабатывания
                     autopy.mouse.click()
                     last_click = current_time
 
 
-        elif sd:  # прокрутка вниз — кулак
+        elif sd:  # прокрутка вниз — кулак с отставленным большим пальцем
                     pyautogui.scroll(-3)
 
         mpDraw.draw_landmarks(img, result.multi_hand_landmarks[0], mp.solutions.hands.HAND_CONNECTIONS)  # рисование линий между точками на руке
