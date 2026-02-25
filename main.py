@@ -15,6 +15,14 @@ def cl(result):  # проверка, сведены ли пальцы
     if s128 < 0.05:
         return True
 
+def scroll_down_check(result):  # проверка, что все пальцы согнуты, кроме большого
+    hand = result.multi_hand_landmarks[0]
+    y4 = hand.landmark[4].y
+    y2 = hand.landmark[2].y
+    if abs(y2 - y4) < 0.05:
+        if not finger2(result) and not finger3(result) and not finger4(result):
+            return True
+
 
 def finger2(results):  # проверка выпрямлен ли второй палец
     a5x = results.multi_hand_landmarks[0].landmark[5].x
@@ -86,19 +94,24 @@ while True:  # осоновной цикл программы
             cx, cy = int(lm.x * w), int(lm.y * h)  # координаты рассматриваемой точки
 
             cv2.circle(img, (cx, cy), 3, (355, 0, 255))  # рисование кружка на точке
+
             if finger2(result) and id == 8:  # проверка на то, выпрямлен ли второй палец и есть ли 8 точка (подушечка второго пальца)
                 cv2.circle(img, (cx, cy), 15, (255, 0, 255), cv2.FILLED)
                 if cx > 15 and cx < width - 180 and cy > 0 and cy < height:  # проверка координат пальца на то, находится ли она в рамках экрана
                     autopy.mouse.move((width - (cx * width) / w), (cy * height) / (h))  # передвижение мышки на указанные координаты
 
-                if cl(result) and finger2(result) and finger3(result) and finger4(result):  # обнаружение жеста для прокрутки вниз
-                    pyautogui.scroll(-5)  # прокрутка на 5 единиц вниз
 
-                elif cl(result) and finger2(result) and finger4(result):  # обнаружение жеста для прокрутки вверх
-                    pyautogui.scroll(5)  # прокрутка на 5 единиц вверх
+
+
+                if finger2(result) and finger3(result) and finger4(result):  # прокрутка вверх — все пальцы выпрямлены
+                    pyautogui.scroll(3)
 
                 elif cl(result) and finger2(result):  # обнаружение жеста для клика
                     autopy.mouse.click()  # клик
+
+
+            elif scroll_down_check(result):  # прокрутка вниз — кулак
+                    pyautogui.scroll(-3)
 
         mpDraw.draw_landmarks(img, result.multi_hand_landmarks[0], mp.solutions.hands.HAND_CONNECTIONS)  # рисование линий между точками на руке
 
