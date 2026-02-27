@@ -5,6 +5,8 @@ import math
 import numpy as np
 import pyautogui
 import time
+import sys
+
 
 
 
@@ -77,7 +79,6 @@ def finger4(results):  # проверка выпрямлен ли четверт
         a8x - a0x, a8y - a0y):
         return True
 
-
 cap = cv2.VideoCapture(0)  # получение изображения с камеры
 width, height = autopy.screen.size()  # получение размеров экрана
 pyautogui.PAUSE = 0
@@ -99,8 +100,10 @@ hands = mp.solutions.hands.Hands(static_image_mode=False,
 mpDraw = mp.solutions.drawing_utils  # создание объекта для дальнейшего рисования линий на руке
 
 last_click = 0  # время последнего клика
+panel_height = 60
 
 while True:
+    flag = True
     _, img = cap.read()  # считывание изображения с камеры
 
     imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -121,7 +124,7 @@ while True:
 
         cv2.circle(img, (cx, cy), 3, (355, 0, 255))  # рисование кружка на точке
 
-        if f2:  # проверка на то, выпрямлен ли второй палец и есть ли 8 точка (подушечка второго пальца)
+        if result and result.multi_hand_landmarks and f2:  # проверка на то, выпрямлен ли второй палец и есть ли 8 точка (подушечка второго пальца)
             cv2.circle(img, (cx, cy), 15, (255, 0, 255), cv2.FILLED)
 
             # рассчет центра экрана
@@ -153,7 +156,7 @@ while True:
             current_time = time.time()  # для клика
 
             if f2 and f3 and f4:  # прокрутка вверх — все пальцы выпрямлены
-                pyautogui.scroll(3)
+                pyautogui.scroll(1)
 
 
             elif click_check and f2 and current_time - last_click > 0.4:  # защита от двойного срабатывания
@@ -162,10 +165,34 @@ while True:
 
 
         elif sd:  # прокрутка вниз — кулак с отставленным большим пальцем
-                    pyautogui.scroll(-3)
+                    pyautogui.scroll(-1)
 
         mpDraw.draw_landmarks(img, result.multi_hand_landmarks[0], mp.solutions.hands.HAND_CONNECTIONS)  # рисование линий между точками на руке
 
     img = np.fliplr(img)  # отзеркаливание изображения, чтобы курсор двигался в нужную сторону
+    panel = np.zeros((panel_height, img.shape[1], 3), dtype=np.uint8)
+
+    cv2.putText(panel, "Gesture Controls:",
+                (20, 35),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,
+                (255, 255, 255),
+                2)
+
+    img = np.vstack((panel, img))
+
     cv2.imshow('Handtrack', img)  # показ изображения
     cv2.waitKey(5)  # команда, которая позволяет окну с изображением не закрываться
+
+    key = cv2.waitKey(1) & 0xFF
+
+    if key == 27:  # ESC
+        cap.release()
+        cv2.destroyAllWindows()
+        sys.exit()
+
+
+cap.release()
+cv2.destroyAllWindows()
+
+
