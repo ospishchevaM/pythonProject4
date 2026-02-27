@@ -170,16 +170,7 @@ while True:
         mpDraw.draw_landmarks(img, result.multi_hand_landmarks[0], mp.solutions.hands.HAND_CONNECTIONS)  # рисование линий между точками на руке
 
     img = np.fliplr(img)  # отзеркаливание изображения, чтобы курсор двигался в нужную сторону
-    panel = np.zeros((panel_height, img.shape[1], 3), dtype=np.uint8)
 
-    cv2.putText(panel, "Gesture Controls:",
-                (20, 35),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.8,
-                (255, 255, 255),
-                2)
-
-    img = np.vstack((panel, img))
 
     cv2.imshow('Handtrack', img)  # показ изображения
     cv2.waitKey(5)  # команда, которая позволяет окну с изображением не закрываться

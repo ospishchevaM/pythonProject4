@@ -4,9 +4,7 @@ import time
 import sys
 import os
 
-def close_app(event):
-    root.destroy()  # Закрыть окно
-
+# ---------- запуск камеры ----------
 def start_program():
     loading_label.config(text="Loading... Please wait")
     root.update()
@@ -14,71 +12,125 @@ def start_program():
     python_path = sys.executable
     script_path = os.path.join(os.getcwd(), "main.py")
 
-    # запускаем камеру
-    process = subprocess.Popen(
+    subprocess.Popen(
         [python_path, script_path],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
 
-    # ждём, пока камера процесс начнёт работать
     time.sleep(4)
-
-    # скрываем стартовое окно только после запуска
     root.withdraw()
 
 
+# ---------- эффект нажатия кнопки ----------
+def button_press(event):
+    btn.config(font=("Helvetica", 19, "bold"))
+
+def button_release(event):
+    btn.config(font=("Helvetica", 18, "bold"))
+
+
+# ---------- GUI ----------
 root = tk.Tk()
 root.title("Gesture Control")
-root.geometry("600x400")
 
 root.attributes('-fullscreen', True)
 root.attributes('-topmost', True)
-root.state('zoomed')
-loading_label = tk.Label(root, text="")
-loading_label.pack()
+root.configure(bg="#f7f8fa")
+
+main_frame = tk.Frame(root, bg="#f7f8fa")
+main_frame.pack(expand=True)
 
 # Заголовок
-label = tk.Label(root,
-                 text="Gesture Control System",
-                 font=("Arial", 18))
+label = tk.Label(
+    main_frame,
+    text="Система управления курсором",
+    font=("Helvetica", 28, "bold"),
+    bg="#f7f8fa",
+    fg="#222222"
+)
 label.pack(pady=30)
 
-# Описание (очень коротко — можно для защиты)
-info = tk.Label(root,
-                text="Start program to activate camera gesture control",
-                font=("Arial", 11))
+# Описание
+info = tk.Label(
+    main_frame,
+    text="Управляйте курсором с помощью руки",
+    font=("Helvetica", 14),
+    bg="#f7f8fa",
+    fg="#555555"
+)
 info.pack(pady=10)
 
-# Кнопка запуска
-btn = tk.Button(root,
-                text="Start",
-                width=20,
-                height=2,
-                command=start_program)
-btn.pack(pady=40)
+# ---------- кнопка Старт ----------
+btn = tk.Button(
+    main_frame,
+    text="Старт",
+    command=start_program,
+    font=("Helvetica", 22),
+    width=18,
+    height=2,
+    bg="#e6e6e6",
+    fg="black",
+    relief="flat",
+    activebackground="#dcdcdc",
+    activeforeground="black"
+)
 
-instruction_text = """
-📌 Инструкция пользователя
+btn.pack(pady=50)
 
-• Вытяните указательный палец — курсор двигается.
-• Сведите указательный и средний пальцы — клик мыши.
-• Вытяните все пальцы — прокрутка вверх.
-• Сожмите руку в кулак и отведите большой палец — прокрутка вниз.
-• Нажмите Esc для выхода из программы.
 
-⚠️ Держите руку в поле зрения камеры.
+# ---------- эффект нажатия (уменьшение размера) ----------
+def press_effect(event):
+    btn.config(font=("Helvetica", 21))
+
+def release_effect(event):
+    btn.config(font=("Helvetica", 22))
+
+btn.bind("<ButtonPress-1>", press_effect)
+btn.bind("<ButtonRelease-1>", release_effect)
+
+
+# ---------- загрузка ----------
+loading_label = tk.Label(
+    main_frame,
+    text="",
+    font=("Helvetica", 12),
+    bg="#f7f8fa",
+    fg="#888888"
+)
+loading_label.pack(pady=10)
+
+# ---------- рамка инструкции ----------
+instruction_frame = tk.Frame(
+    root,
+    bg="white",
+    bd=2,
+    relief="solid",
+    padx=30,
+    pady=25
+)
+
+instruction_frame.pack(pady=(0, 150))
+
+instruction_text = """ Инструкция пользователя
+
+• Вытяните указательный палец — курсор двигается
+• Сведите указательный и средний пальцы — клик мыши
+• Вытяните все пальцы — прокрутка вверх
+• Сожмите руку в кулак и отведите большой палец — прокрутка вниз
+• Нажмите Esc для выхода из программы
+
+⚠️ Держите руку в поле зрения камеры
 """
 
 instruction_label = tk.Label(
-    root,
+    instruction_frame,
     text=instruction_text,
-    font=("Arial", 11),
-    justify="left"
+    font=("Helvetica", 18),
+    justify="center",
+    bg="white"
 )
 
-instruction_label.pack(pady=20)
-
+instruction_label.pack()
 
 root.mainloop()
-
