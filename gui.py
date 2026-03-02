@@ -9,16 +9,18 @@ def start_program():
     loading_label.config(text="Loading... Please wait")
     root.update()
 
-    python_path = sys.executable
-    script_path = os.path.join(os.getcwd(), "main.py")
-
-    subprocess.Popen(
-        [python_path, script_path],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+    # путь к main.py рядом с gui.py / exe
+    script_path = os.path.join(
+        os.path.dirname(__file__),
+        "main.py"
     )
 
-    time.sleep(4)
+    python_path = sys.executable
+
+    subprocess.Popen([python_path, script_path])
+
+    time.sleep(2)
+
     root.withdraw()
 
 

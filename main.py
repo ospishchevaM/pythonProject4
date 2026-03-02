@@ -4,8 +4,29 @@ import mediapipe as mp
 import math
 import numpy as np
 import pyautogui
+import tkinter as tk
 import time
 import sys
+
+
+cv2.startWindowThread()
+
+# ---------- запуск камеры ----------
+def start_program():
+    loading_label.config(text="Loading...")
+    root.update()
+
+    root.withdraw()
+
+    main_proc()   # вызываем камеру
+
+
+# ---------- эффект нажатия кнопки ----------
+def button_press(event):
+    btn.config(font=("Helvetica", 19, "bold"))
+
+def button_release(event):
+    btn.config(font=("Helvetica", 18, "bold"))
 
 
 
@@ -79,111 +100,219 @@ def finger4(results):  # проверка выпрямлен ли четверт
         a8x - a0x, a8y - a0y):
         return True
 
-cap = cv2.VideoCapture(0)  # получение изображения с камеры
-width, height = autopy.screen.size()  # получение размеров экрана
-pyautogui.PAUSE = 0
 
-# начальная позиция курсора
-prev_x = width / 2
-prev_y = height / 2
+def main_proc():
+    cap = cv2.VideoCapture(0)  # получение изображения с камеры
+    width, height = autopy.screen.size()  # получение размеров экрана
+    pyautogui.PAUSE = 0
 
-SMOOTHING = 0.7
-SENSITIVITY = 2.2
+    # начальная позиция курсора
+    prev_x = width / 2
+    prev_y = height / 2
 
-
-# обнаружние руки
-hands = mp.solutions.hands.Hands(static_image_mode=False,
-                                 max_num_hands=1,
-                                 min_tracking_confidence=0.3,
-                                 min_detection_confidence=0.3)
-
-mpDraw = mp.solutions.drawing_utils  # создание объекта для дальнейшего рисования линий на руке
-
-last_click = 0  # время последнего клика
-panel_height = 60
-
-while True:
-    flag = True
-    _, img = cap.read()  # считывание изображения с камеры
-
-    imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    result = hands.process(imgRGB)  # обнаружение точек на руке
-
-    if result and result.multi_hand_landmarks:  # проверка, рука и точки на экране
-        f2 = finger2(result)
-        f3 = finger3(result)
-        f4 = finger4(result)
-        sd = scroll_down_check(result)
-        click_check = cl(result)
-        hand = result.multi_hand_landmarks[0]
-        lm = hand.landmark[8]
-
-        h, w, _ = img.shape  # получение размеров изображения
-        cx = int(lm.x * w)
-        cy = int(lm.y * h)
-
-        cv2.circle(img, (cx, cy), 3, (355, 0, 255))  # рисование кружка на точке
-
-        if result and result.multi_hand_landmarks and f2:  # проверка на то, выпрямлен ли второй палец и есть ли 8 точка (подушечка второго пальца)
-            cv2.circle(img, (cx, cy), 15, (255, 0, 255), cv2.FILLED)
-
-            # рассчет центра экрана
-            center_x = w / 2
-            center_y = h / 2
-
-            # насколько палец смещен от центра
-            dx = cx - center_x
-            dy = cy - center_y
-
-            x_screen = width / 2 - dx * SENSITIVITY
-            y_screen = height / 2 + dy * SENSITIVITY
-
-            # ограничения на координаты, чтобы не выйти за экран
-            margin = 5
-            x_screen = max(margin, min(width - margin, x_screen))
-            y_screen = max(margin, min(height - margin, y_screen))
-
-            # сглаживание движения
-            x_screen = prev_x + (x_screen - prev_x) * SMOOTHING
-            y_screen = prev_y + (y_screen - prev_y) * SMOOTHING
-
-            prev_x = x_screen
-            prev_y = y_screen
-
-            # движение курсора
-            autopy.mouse.move(x_screen, y_screen)
-
-            current_time = time.time()  # для клика
-
-            if f2 and f3 and f4:  # прокрутка вверх — все пальцы выпрямлены
-                pyautogui.scroll(1)
+    SMOOTHING = 0.7
+    SENSITIVITY = 2.2
 
 
-            elif click_check and f2 and current_time - last_click > 0.4:  # защита от двойного срабатывания
-                    autopy.mouse.click()
-                    last_click = current_time
+    # обнаружние руки
+    hands = mp.solutions.hands.Hands(static_image_mode=False,
+                                     max_num_hands=1,
+                                     min_tracking_confidence=0.3,
+                                     min_detection_confidence=0.3)
+
+    mpDraw = mp.solutions.drawing_utils  # создание объекта для дальнейшего рисования линий на руке
+
+    last_click = 0  # время последнего клика
+    cv2.namedWindow("Handtrack", cv2.WINDOW_NORMAL)
+
+    while True:
+        flag = True
+        _, img = cap.read()  # считывание изображения с камеры
+
+        imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        result = hands.process(imgRGB)  # обнаружение точек на руке
+
+        if result and result.multi_hand_landmarks:  # проверка, рука и точки на экране
+            f2 = finger2(result)
+            f3 = finger3(result)
+            f4 = finger4(result)
+            sd = scroll_down_check(result)
+            click_check = cl(result)
+            hand = result.multi_hand_landmarks[0]
+            lm = hand.landmark[8]
+
+            h, w, _ = img.shape  # получение размеров изображения
+            cx = int(lm.x * w)
+            cy = int(lm.y * h)
+
+            cv2.circle(img, (cx, cy), 3, (355, 0, 255))  # рисование кружка на точке
+
+            if result and result.multi_hand_landmarks and f2:  # проверка на то, выпрямлен ли второй палец и есть ли 8 точка (подушечка второго пальца)
+                cv2.circle(img, (cx, cy), 15, (255, 0, 255), cv2.FILLED)
+
+                # рассчет центра экрана
+                center_x = w / 2
+                center_y = h / 2
+
+                # насколько палец смещен от центра
+                dx = cx - center_x
+                dy = cy - center_y
+
+                x_screen = width / 2 - dx * SENSITIVITY
+                y_screen = height / 2 + dy * SENSITIVITY
+
+                # ограничения на координаты, чтобы не выйти за экран
+                margin = 5
+                x_screen = max(margin, min(width - margin, x_screen))
+                y_screen = max(margin, min(height - margin, y_screen))
+
+                # сглаживание движения
+                x_screen = prev_x + (x_screen - prev_x) * SMOOTHING
+                y_screen = prev_y + (y_screen - prev_y) * SMOOTHING
+
+                prev_x = x_screen
+                prev_y = y_screen
+
+                # движение курсора
+                autopy.mouse.move(x_screen, y_screen)
+
+                current_time = time.time()  # для клика
+
+                if f2 and f3 and f4:  # прокрутка вверх — все пальцы выпрямлены
+                    pyautogui.scroll(1)
 
 
-        elif sd:  # прокрутка вниз — кулак с отставленным большим пальцем
-                    pyautogui.scroll(-1)
-
-        mpDraw.draw_landmarks(img, result.multi_hand_landmarks[0], mp.solutions.hands.HAND_CONNECTIONS)  # рисование линий между точками на руке
-
-    img = np.fliplr(img)  # отзеркаливание изображения, чтобы курсор двигался в нужную сторону
+                elif click_check and f2 and current_time - last_click > 0.4:  # защита от двойного срабатывания
+                        autopy.mouse.click()
+                        last_click = current_time
 
 
-    cv2.imshow('Handtrack', img)  # показ изображения
-    cv2.waitKey(5)  # команда, которая позволяет окну с изображением не закрываться
+            elif sd:  # прокрутка вниз — кулак с отставленным большим пальцем
+                        pyautogui.scroll(-1)
 
-    key = cv2.waitKey(1) & 0xFF
+            mpDraw.draw_landmarks(img, result.multi_hand_landmarks[0], mp.solutions.hands.HAND_CONNECTIONS)  # рисование линий между точками на руке
 
-    if key == 27:  # ESC
-        cap.release()
-        cv2.destroyAllWindows()
-        sys.exit()
+        img = np.fliplr(img)  # отзеркаливание изображения, чтобы курсор двигался в нужную сторону
 
 
-cap.release()
-cv2.destroyAllWindows()
+        cv2.imshow('Handtrack', img)  # показ изображения
+        cv2.waitKey(5)  # команда, которая позволяет окну с изображением не закрываться
+
+        key = cv2.waitKey(1) & 0xFF
 
 
+
+        if key == 27:  # ESC
+            cap.release()
+            cv2.destroyAllWindows()
+            sys.exit()
+
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+
+# ---------- GUI ----------
+root = tk.Tk()
+root.title("Gesture Control")
+
+root.attributes('-fullscreen', True)
+root.attributes('-topmost', True)
+root.configure(bg="#f7f8fa")
+
+main_frame = tk.Frame(root, bg="#f7f8fa")
+main_frame.pack(expand=True)
+
+# Заголовок
+label = tk.Label(
+    main_frame,
+    text="Система управления курсором",
+    font=("Helvetica", 28, "bold"),
+    bg="#f7f8fa",
+    fg="#222222"
+)
+label.pack(pady=30)
+
+# Описание
+info = tk.Label(
+    main_frame,
+    text="Управляйте курсором с помощью руки",
+    font=("Helvetica", 14),
+    bg="#f7f8fa",
+    fg="#555555"
+)
+info.pack(pady=10)
+
+# ---------- кнопка Старт ----------
+btn = tk.Button(
+    main_frame,
+    text="Старт",
+    command=start_program,
+    font=("Helvetica", 22),
+    width=18,
+    height=2,
+    bg="#e6e6e6",
+    fg="black",
+    relief="flat",
+    activebackground="#dcdcdc",
+    activeforeground="black"
+)
+
+btn.pack(pady=50)
+
+
+# ---------- эффект нажатия (уменьшение размера) ----------
+def press_effect(event):
+    btn.config(font=("Helvetica", 21))
+
+def release_effect(event):
+    btn.config(font=("Helvetica", 22))
+
+btn.bind("<ButtonPress-1>", press_effect)
+btn.bind("<ButtonRelease-1>", release_effect)
+
+
+# ---------- загрузка ----------
+loading_label = tk.Label(
+    main_frame,
+    text="",
+    font=("Helvetica", 12),
+    bg="#f7f8fa",
+    fg="#888888"
+)
+loading_label.pack(pady=10)
+
+# ---------- рамка инструкции ----------
+instruction_frame = tk.Frame(
+    root,
+    bg="white",
+    bd=2,
+    relief="solid",
+    padx=30,
+    pady=25
+)
+
+instruction_frame.pack(pady=(0, 150))
+
+instruction_text = """ Инструкция пользователя
+
+• Вытяните указательный палец — курсор двигается
+• Сведите указательный и средний пальцы — клик мыши
+• Вытяните все пальцы — прокрутка вверх
+• Сожмите руку в кулак и отведите большой палец — прокрутка вниз
+• Нажмите Esc для выхода из программы
+
+⚠️ Держите руку в поле зрения камеры
+"""
+
+instruction_label = tk.Label(
+    instruction_frame,
+    text=instruction_text,
+    font=("Helvetica", 18),
+    justify="center",
+    bg="white"
+)
+
+instruction_label.pack()
+
+root.mainloop()
